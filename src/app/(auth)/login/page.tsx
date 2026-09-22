@@ -28,8 +28,7 @@ export default function LoginPage() {
     if (result.error) {
       setErrorMsg(result.error);
     } else {
-      router.push("/dashboard");
-      router.refresh();
+      window.location.href = "/dashboard";
     }
   };
 

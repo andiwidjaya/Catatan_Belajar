@@ -30,11 +30,10 @@ export default function RegisterPage() {
     if (result.error) {
       setErrorMsg(result.error);
     } else {
-      setSuccessMsg("Account created successfully! Please check your email to confirm registration or sign in.");
+      setSuccessMsg("Account created successfully! Redirecting...");
       setTimeout(() => {
-        router.push("/dashboard");
-        router.refresh();
-      }, 1500);
+        window.location.href = "/dashboard";
+      }, 1000);
     }
   };
 
