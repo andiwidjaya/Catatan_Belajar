@@ -31,7 +31,7 @@ export class GeminiChatService {
     summaryText = "",
     history,
     userQuery,
-    modelName = "gemini-2.5-flash",
+    modelName = process.env.GEMINI_MODEL || "gemini-3.6-flash",
   }: ItemChatOptions): Promise<string> {
     const apiKey = this.getApiKey();
     const ai = new GoogleGenAI({ apiKey });

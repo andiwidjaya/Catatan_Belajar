@@ -26,7 +26,7 @@ The **Personal Knowledge Library** is built as a highly performant, accessible, 
                      ▼                                ▼
 ┌───────────────────────────────────────┐  ┌──────────────────────────────┐
 │        Supabase Cloud Backend         │  │      Google Gemini API       │
-│  - PostgreSQL + pgvector              │  │  - gemini-2.5-flash         │
+│  - PostgreSQL + pgvector              │  │  - gemini-3.6-flash         │
 │  - Row Level Security (RLS)           │  │  - text-embedding-004       │
 │  - Supabase Auth (JWT Sessions)       │  │  - Structured JSON Outputs  │
 │  - Supabase Storage (Audio/Video)     │  │                              │
@@ -272,9 +272,9 @@ CREATE TABLE chat_messages (
 
 ### Gemini API Usage Strategy
 1. **Model Choices**:
-   - **Summarization & Concepts**: `gemini-2.5-flash` for fast, cost-effective structured JSON analysis.
-   - **Transcript Processing / Audio Reasoning**: `gemini-2.5-flash` multimodal support for direct audio/video analysis when native transcription is needed.
-   - **RAG QA Chat**: `gemini-2.5-flash` with retrieved context chunks.
+   - **Summarization & Concepts**: `gemini-3.6-flash` for fast, cost-effective structured JSON analysis.
+   - **Transcript Processing / Audio Reasoning**: `gemini-3.6-flash` multimodal support for direct audio/video analysis when native transcription is needed.
+   - **RAG QA Chat**: `gemini-3.6-flash` with retrieved context chunks.
    - **Embeddings**: `text-embedding-004` (768 dimensions).
 
 280. **Structured Output & Security Guarantees**:

@@ -78,7 +78,7 @@ export class GeminiService {
   async generateStructuredSummary({
     title,
     transcriptText,
-    modelName = "gemini-2.5-flash",
+    modelName = process.env.GEMINI_MODEL || "gemini-3.6-flash",
   }: GeminiProcessOptions): Promise<{ summary: GeminiStructuredSummary; model: string }> {
     const apiKey = this.getApiKey();
     const ai = new GoogleGenAI({ apiKey });

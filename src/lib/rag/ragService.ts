@@ -90,7 +90,7 @@ Provide a clear, helpful, grounded answer based strictly on the retrieved contex
 
     try {
       const response = await ai.models.generateContent({
-        model: "gemini-2.5-flash",
+        model: process.env.GEMINI_MODEL || "gemini-3.6-flash",
         contents: [
           { role: "system", parts: [{ text: systemPrompt }] },
           { role: "user", parts: [{ text: userPrompt }] },
