@@ -1,4 +1,5 @@
 import { GoogleGenAI, Type } from "@google/genai";
+import { withGeminiRetry } from "./retryHelper";
 
 export interface GeminiConcept {
   name: string;
@@ -113,47 +114,49 @@ Extract a comprehensive knowledge summary in JSON format with:
 - "possible_questions": Array of 3-5 study or review questions based directly on this text.`;
 
     try {
-      const response = await ai.models.generateContent({
-        model: modelName,
-        contents: [
-          { role: "user", parts: [{ text: userPrompt }] },
-        ],
-        config: {
-          systemInstruction: systemPrompt,
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              summary: { type: Type.STRING },
-              detailed_summary: { type: Type.STRING },
-              key_points: {
-                type: Type.ARRAY,
-                items: { type: Type.STRING },
-              },
-              concepts: {
-                type: Type.ARRAY,
-                items: {
-                  type: Type.OBJECT,
-                  properties: {
-                    name: { type: Type.STRING },
-                    definition: { type: Type.STRING },
+      const response = await withGeminiRetry(() =>
+        ai.models.generateContent({
+          model: modelName,
+          contents: [
+            { role: "user", parts: [{ text: userPrompt }] },
+          ],
+          config: {
+            systemInstruction: systemPrompt,
+            responseMimeType: "application/json",
+            responseSchema: {
+              type: Type.OBJECT,
+              properties: {
+                summary: { type: Type.STRING },
+                detailed_summary: { type: Type.STRING },
+                key_points: {
+                  type: Type.ARRAY,
+                  items: { type: Type.STRING },
+                },
+                concepts: {
+                  type: Type.ARRAY,
+                  items: {
+                    type: Type.OBJECT,
+                    properties: {
+                      name: { type: Type.STRING },
+                      definition: { type: Type.STRING },
+                    },
+                    required: ["name", "definition"],
                   },
-                  required: ["name", "definition"],
+                },
+                keywords: {
+                  type: Type.ARRAY,
+                  items: { type: Type.STRING },
+                },
+                possible_questions: {
+                  type: Type.ARRAY,
+                  items: { type: Type.STRING },
                 },
               },
-              keywords: {
-                type: Type.ARRAY,
-                items: { type: Type.STRING },
-              },
-              possible_questions: {
-                type: Type.ARRAY,
-                items: { type: Type.STRING },
-              },
+              required: ["summary", "detailed_summary", "key_points", "concepts", "keywords", "possible_questions"],
             },
-            required: ["summary", "detailed_summary", "key_points", "concepts", "keywords", "possible_questions"],
           },
-        },
-      });
+        })
+      );
 
       const responseText = response.text;
       if (!responseText) {

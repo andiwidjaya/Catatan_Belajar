@@ -1,4 +1,5 @@
 import { GoogleGenAI } from "@google/genai";
+import { withGeminiRetry } from "./retryHelper";
 
 export interface ChatMessageContext {
   role: "user" | "assistant" | "system";
@@ -72,13 +73,15 @@ ${transcriptText || "No transcript available."}
     });
 
     try {
-      const response = await ai.models.generateContent({
-        model: modelName,
-        contents,
-        config: {
-          systemInstruction: `${systemPrompt}\n\n${contextHeader}`,
-        },
-      });
+      const response = await withGeminiRetry(() =>
+        ai.models.generateContent({
+          model: modelName,
+          contents,
+          config: {
+            systemInstruction: `${systemPrompt}\n\n${contextHeader}`,
+          },
+        })
+      );
 
       const responseText = response.text;
       if (!responseText || !responseText.trim()) {

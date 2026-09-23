@@ -1,5 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
 import { embeddingService } from "@/lib/gemini/embeddingService";
+import { withGeminiRetry } from "@/lib/gemini/retryHelper";
 
 export interface RetrievedChunk {
   id: string;
@@ -89,15 +90,17 @@ Instructions:
 Provide a clear, helpful, grounded answer based strictly on the retrieved context above.`;
 
     try {
-      const response = await ai.models.generateContent({
-        model: process.env.GEMINI_MODEL || "gemini-3.6-flash",
-        contents: [
-          { role: "user", parts: [{ text: userPrompt }] },
-        ],
-        config: {
-          systemInstruction: systemPrompt,
-        },
-      });
+      const response = await withGeminiRetry(() =>
+        ai.models.generateContent({
+          model: process.env.GEMINI_MODEL || "gemini-3.6-flash",
+          contents: [
+            { role: "user", parts: [{ text: userPrompt }] },
+          ],
+          config: {
+            systemInstruction: systemPrompt,
+          },
+        })
+      );
 
       const answerText = response.text || "The knowledge base does not contain enough information to answer this question.";
 
