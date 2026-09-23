@@ -92,9 +92,11 @@ Provide a clear, helpful, grounded answer based strictly on the retrieved contex
       const response = await ai.models.generateContent({
         model: process.env.GEMINI_MODEL || "gemini-3.6-flash",
         contents: [
-          { role: "system", parts: [{ text: systemPrompt }] },
           { role: "user", parts: [{ text: userPrompt }] },
         ],
+        config: {
+          systemInstruction: systemPrompt,
+        },
       });
 
       const answerText = response.text || "The knowledge base does not contain enough information to answer this question.";

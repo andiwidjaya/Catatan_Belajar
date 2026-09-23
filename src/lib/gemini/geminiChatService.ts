@@ -55,9 +55,7 @@ ${transcriptText || "No transcript available."}
 </untrusted_content>`;
 
     // Format chat contents for Google GenAI SDK
-    const contents: any[] = [
-      { role: "system", parts: [{ text: `${systemPrompt}\n\n${contextHeader}` }] },
-    ];
+    const contents: any[] = [];
 
     // Append conversation history
     for (const msg of history) {
@@ -77,6 +75,9 @@ ${transcriptText || "No transcript available."}
       const response = await ai.models.generateContent({
         model: modelName,
         contents,
+        config: {
+          systemInstruction: `${systemPrompt}\n\n${contextHeader}`,
+        },
       });
 
       const responseText = response.text;

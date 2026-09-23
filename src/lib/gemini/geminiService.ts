@@ -116,10 +116,10 @@ Extract a comprehensive knowledge summary in JSON format with:
       const response = await ai.models.generateContent({
         model: modelName,
         contents: [
-          { role: "system", parts: [{ text: systemPrompt }] },
           { role: "user", parts: [{ text: userPrompt }] },
         ],
         config: {
+          systemInstruction: systemPrompt,
           responseMimeType: "application/json",
           responseSchema: {
             type: Type.OBJECT,
