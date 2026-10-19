@@ -46,7 +46,7 @@ export async function middleware(request: NextRequest) {
   };
 
   // If Supabase is in placeholder mode (e.g. env vars not set yet in Vercel),
-  // NEVER call supabase.auth.getUser() to prevent fatal DNS/fetch errors.
+  // NEVER call Supabase network to prevent fatal DNS/fetch errors.
   if (isPlaceholder) {
     if (pathname === "/") {
       const url = request.nextUrl.clone();
@@ -56,35 +56,49 @@ export async function middleware(request: NextRequest) {
     return supabaseResponse;
   }
 
-  // Create Supabase client and retrieve user safely
-  let user = null;
-  try {
-    const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value)
-          );
-          supabaseResponse = NextResponse.next({
-            request,
-          });
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
-          );
-        },
-      },
-    });
+  // Check if any Supabase session cookies exist in the request
+  const allCookies = request.cookies.getAll();
+  const hasAuthCookie = allCookies.some(
+    (cookie) => cookie.name.startsWith("sb-") && cookie.name.includes("token")
+  );
 
-    const {
-      data: { user: authUser },
-    } = await supabase.auth.getUser();
-    user = authUser;
-  } catch (err) {
-    console.error("Middleware Supabase auth error:", err);
-    user = null;
+  // If no auth cookies exist, the user is definitely not logged in.
+  // Skip any remote network calls to Supabase completely to prevent 504 timeouts!
+  let user = null;
+
+  if (hasAuthCookie) {
+    try {
+      const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
+        cookies: {
+          getAll() {
+            return request.cookies.getAll();
+          },
+          setAll(cookiesToSet) {
+            cookiesToSet.forEach(({ name, value }) =>
+              request.cookies.set(name, value)
+            );
+            supabaseResponse = NextResponse.next({
+              request,
+            });
+            cookiesToSet.forEach(({ name, value, options }) =>
+              supabaseResponse.cookies.set(name, value, options)
+            );
+          },
+        },
+      });
+
+      // Strict 2-second timeout so middleware NEVER causes 504 MIDDLEWARE_INVOCATION_TIMEOUT
+      const authPromise = supabase.auth.getUser();
+      const timeoutPromise = new Promise<{ data: { user: null }; error: Error }>((_, reject) =>
+        setTimeout(() => reject(new Error("Supabase auth timeout")), 2000)
+      );
+
+      const result = await Promise.race([authPromise, timeoutPromise]);
+      user = result.data?.user ?? null;
+    } catch (err) {
+      console.warn("Middleware Supabase auth error or timeout:", err);
+      user = null;
+    }
   }
 
   // Handle root "/" path directly
