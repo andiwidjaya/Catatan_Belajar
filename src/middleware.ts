@@ -9,17 +9,57 @@ export async function middleware(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  // Skip strict redirect enforcement if Supabase env vars are set to placeholder values
+  // Check if Supabase credentials are missing or placeholder
   const isPlaceholder =
     !supabaseUrl ||
     !supabaseAnonKey ||
     supabaseUrl.includes("placeholder") ||
     supabaseAnonKey.includes("placeholder");
 
-  const supabase = createServerClient(
-    supabaseUrl || "https://placeholder.supabase.co",
-    supabaseAnonKey || "placeholder-key",
-    {
+  const pathname = request.nextUrl.pathname;
+
+  // Define protected and auth routes
+  const protectedRoutes = [
+    "/dashboard",
+    "/library",
+    "/review",
+    "/favorites",
+    "/ai",
+    "/settings",
+  ];
+  const authRoutes = ["/login", "/register"];
+
+  const isProtectedRoute =
+    pathname === "/" ||
+    protectedRoutes.some(
+      (route) => pathname === route || pathname.startsWith(`${route}/`)
+    );
+  const isAuthRoute = authRoutes.some((route) => pathname === route);
+
+  // Helper to copy session cookies when returning a redirect response
+  const createRedirectWithCookies = (url: URL) => {
+    const redirectResponse = NextResponse.redirect(url);
+    supabaseResponse.cookies.getAll().forEach((cookie) => {
+      redirectResponse.cookies.set(cookie.name, cookie.value, cookie);
+    });
+    return redirectResponse;
+  };
+
+  // If Supabase is in placeholder mode (e.g. env vars not set yet in Vercel),
+  // NEVER call supabase.auth.getUser() to prevent fatal DNS/fetch errors.
+  if (isPlaceholder) {
+    if (pathname === "/") {
+      const url = request.nextUrl.clone();
+      url.pathname = "/login";
+      return NextResponse.redirect(url);
+    }
+    return supabaseResponse;
+  }
+
+  // Create Supabase client and retrieve user safely
+  let user = null;
+  try {
+    const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
       cookies: {
         getAll() {
           return request.cookies.getAll();
@@ -36,45 +76,37 @@ export async function middleware(request: NextRequest) {
           );
         },
       },
-    }
-  );
+    });
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    const {
+      data: { user: authUser },
+    } = await supabase.auth.getUser();
+    user = authUser;
+  } catch (err) {
+    console.error("Middleware Supabase auth error:", err);
+    user = null;
+  }
 
-  const pathname = request.nextUrl.pathname;
+  // Handle root "/" path directly
+  if (pathname === "/") {
+    const url = request.nextUrl.clone();
+    url.pathname = user ? "/dashboard" : "/login";
+    return createRedirectWithCookies(url);
+  }
 
-  // Define protected and auth routes
-  const protectedRoutes = [
-    "/dashboard",
-    "/library",
-    "/review",
-    "/favorites",
-    "/ai",
-    "/settings",
-  ];
-  const authRoutes = ["/login", "/register"];
+  // Unauthenticated user trying to access protected route
+  if (!user && isProtectedRoute) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/login";
+    url.searchParams.set("redirectTo", pathname);
+    return createRedirectWithCookies(url);
+  }
 
-  const isProtectedRoute = protectedRoutes.some(
-    (route) => pathname === route || pathname.startsWith(`${route}/`)
-  );
-  const isAuthRoute = authRoutes.some((route) => pathname === route);
-
-  // If real Supabase keys are configured, enforce strict auth redirection
-  if (!isPlaceholder) {
-    if (!user && isProtectedRoute) {
-      const url = request.nextUrl.clone();
-      url.pathname = "/login";
-      url.searchParams.set("redirectTo", pathname);
-      return NextResponse.redirect(url);
-    }
-
-    if (user && isAuthRoute) {
-      const url = request.nextUrl.clone();
-      url.pathname = "/dashboard";
-      return NextResponse.redirect(url);
-    }
+  // Authenticated user trying to access login/register
+  if (user && isAuthRoute) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/dashboard";
+    return createRedirectWithCookies(url);
   }
 
   return supabaseResponse;

@@ -37,6 +37,10 @@ export default function RegisterPage() {
     }
   };
 
+  const isEnvMissing =
+    !process.env.NEXT_PUBLIC_SUPABASE_URL ||
+    process.env.NEXT_PUBLIC_SUPABASE_URL.includes("placeholder");
+
   return (
     <div className="flex min-h-screen items-center justify-center p-4 bg-slate-50 dark:bg-slate-950">
       <div className="w-full max-w-md space-y-6">
@@ -58,6 +62,17 @@ export default function RegisterPage() {
             <CardDescription>Enter your details to create a new library account</CardDescription>
           </CardHeader>
           <CardContent>
+            {isEnvMissing && (
+              <div className="mb-4 rounded-xl border border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/60 p-4 text-xs text-amber-900 dark:text-amber-200">
+                <div className="font-semibold mb-1 flex items-center gap-1.5">
+                  <span>⚠️ Supabase Environment Variables Belum Terpasang</span>
+                </div>
+                <p className="leading-relaxed">
+                  Website ini memerlukan variabel lingkungan Supabase. Harap atur <strong>NEXT_PUBLIC_SUPABASE_URL</strong> dan <strong>NEXT_PUBLIC_SUPABASE_ANON_KEY</strong> di dashboard Vercel (<em>Settings &gt; Environment Variables</em>), lalu jalankan <em>Redeploy</em>.
+                </p>
+              </div>
+            )}
+
             <form onSubmit={handleSubmit} className="space-y-4">
               {errorMsg && <ErrorState title="Registration Error" message={errorMsg} />}
               {successMsg && (
