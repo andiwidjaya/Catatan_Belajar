@@ -18,13 +18,24 @@ export async function loginWithEmail(formData: FormData) {
     });
 
     if (error) {
+      if (error.message?.includes("fetch") || error.message?.includes("Failed")) {
+        return {
+          error: "Gagal terhubung ke database Supabase (Failed to fetch). Project Supabase Anda kemungkinan sedang di-PAUSE oleh Supabase atau URL tidak aktif. Silakan buka Supabase Dashboard dan klik 'Restore Project'.",
+        };
+      }
       return { error: error.message };
     }
 
     return { success: true };
   } catch (err: any) {
     console.error("loginWithEmail error:", err);
-    return { error: err?.message || "Failed to sign in. Please verify your connection and environment variables." };
+    const msg = err?.message || "";
+    if (msg.includes("fetch") || msg.includes("Failed")) {
+      return {
+        error: "Gagal terhubung ke database Supabase (Failed to fetch). Project Supabase Anda kemungkinan sedang di-PAUSE oleh Supabase atau URL tidak aktif. Silakan buka Supabase Dashboard dan klik 'Restore Project'.",
+      };
+    }
+    return { error: msg || "Failed to sign in. Please verify your connection and environment variables." };
   }
 }
 
@@ -50,13 +61,24 @@ export async function registerWithEmail(formData: FormData) {
     });
 
     if (error) {
+      if (error.message?.includes("fetch") || error.message?.includes("Failed")) {
+        return {
+          error: "Gagal terhubung ke database Supabase (Failed to fetch). Project Supabase Anda kemungkinan sedang di-PAUSE oleh Supabase atau URL tidak aktif. Silakan buka Supabase Dashboard dan klik 'Restore Project'.",
+        };
+      }
       return { error: error.message };
     }
 
     return { success: true };
   } catch (err: any) {
     console.error("registerWithEmail error:", err);
-    return { error: err?.message || "Failed to create account. Please verify your connection." };
+    const msg = err?.message || "";
+    if (msg.includes("fetch") || msg.includes("Failed")) {
+      return {
+        error: "Gagal terhubung ke database Supabase (Failed to fetch). Project Supabase Anda kemungkinan sedang di-PAUSE oleh Supabase atau URL tidak aktif. Silakan buka Supabase Dashboard dan klik 'Restore Project'.",
+      };
+    }
+    return { error: msg || "Failed to create account. Please verify your connection." };
   }
 }
 
